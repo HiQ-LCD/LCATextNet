@@ -96,7 +96,6 @@ for idx,impact in impact_dict.items():
     model_version = model_path.split("_")[-1].split(".")[0]
     print(f"Evaluating model {model_name} with version {model_version}")
     rewrite_impact_name=impact_name
-    # 去除空格，冒号等
     rewrite_impact_name = rewrite_impact_name.replace(" ", "").replace(":", "").replace("/", "_")
     result_path = os.path.join(
         DATA_PATH,

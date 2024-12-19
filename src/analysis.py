@@ -36,52 +36,50 @@ data_path = os.path.join(WORK_DIR, 'data', 'ecoinvent', 'gwp_train_data.xlsx')
 impact_list = ['acidification', 'climate change', 'climate change - biogenic', 'climate change - fossil', 'climate change - land use and land use change', 'ecotoxicity - freshwater', 'ecotoxicity - freshwater, inorganics', 'ecotoxicity - freshwater, organics', 'energy resources - non-renewable', 'eutrophication - freshwater', 'eutrophication - marine', 'eutrophication - terrestrial', 'human toxicity - carcinogenic', 'human toxicity - carcinogenic, inorganics', 'human toxicity - carcinogenic, organics', 'human toxicity - non-carcinogenic', 'human toxicity - non-carcinogenic, inorganics', 'human toxicity - non-carcinogenic, organics', 'ionising radiation - human health', 'land use', 'material resources - metals&minerals', 'ozone depletion', 'particulate matter formation', 'photochemical oxidant formation - human health', 'water use']
 
 
-# 设置 Decimal 精度
-getcontext().prec = 28  # 可以根据需要调整精度
+# Set Decimal precision
+getcontext().prec = 28  # Can be adjusted based on needs
 
 def analysis_dataset(data_path):
     stopwords_path = os.path.join(WORK_DIR, 'data', 'stopwords','english')
 
     STOP_WORDS = set(open(stopwords_path, 'r').read().splitlines())
-    # 分析目标字段的文本统计特征，并根据sector进行统计
-    # 分析纬度包括：
-    # 1. 字段长度分布: 平均值、标准差
-    # 2. 包含的词汇分布: 词汇数量、词汇长度分布
+    # Analyze text statistical features of target fields by sector
+    # Analysis dimensions include:
+    # 1. Field length distribution: mean, standard deviation
+    # 2. Vocabulary distribution: word count, word length distribution
     data = pd.read_excel(data_path)
     data["SystemBoundary"] = data.apply(lambda x: f"{x['includedActivitiesStart']} {x['includedActivitiesEnd']}", axis=1)
     required_columns = common_columns + target_columns
     data = data[required_columns]
-    # 创建结果字典存储统计信息
     stats = {}
     
-    # 统计每个sector的数据条目数
     sector_counts = data['sector'].value_counts()
     print("\nSector data counts:")
     for sector, count in sector_counts.items():
         print(f"{sector}: {count} records")
     
-    # 按sector分组进行分析
+    # Analysis by sector
     for sector in data['sector'].unique():
         sector_data = data[data['sector'] == sector]
         sector_stats = {}
-        # 记录数据条目数
+        # record count
         sector_stats['record_count'] = len(sector_data)
-        # 分析每个目标字段
+        # analyze each target field
         for column in target_columns:
             column_stats = {}
-            # 1. 字段长度分布统计
+            # 1. field length distribution
             lengths = sector_data[column].str.len()
             column_stats['avg_length'] = lengths.mean()
             column_stats['std_length'] = lengths.std()
-            # 2. 词汇分布统计
-            # 将文本分词并统计不同词汇
+            # 2. vocabulary distribution
+            # split text and count different words
             unique_words = set()
             word_counts = []
             word_lengths = []
             
             for text in sector_data[column].dropna():
                 words = text.split()
-                unique_words.update(words)  # 添加不重复的词
+                unique_words.update(words)  # add unique words
                 word_counts.append(len(words))
                 word_lengths.extend([len(word) for word in words])
             
@@ -91,7 +89,7 @@ def analysis_dataset(data_path):
             column_stats['avg_word_length'] = sum(word_lengths) / len(word_lengths) if word_lengths else 0
             column_stats['std_word_length'] = pd.Series(word_lengths).std()
             
-            # 保存最常见的词汇（top 10）- modified to filter stopwords
+            # save the most common words (top 10) - modified to filter stopwords
             word_freq = {}
             for text in sector_data[column].dropna():
                 for word in text.split():
@@ -106,10 +104,10 @@ def analysis_dataset(data_path):
             
         stats[sector] = sector_stats
     
-    # 将统计结果转换为DataFrame便于展示
+    # convert statistics to DataFrame for display
     results = []
     for sector, sector_stats in stats.items():
-        # 添加sector的数据条目数
+        # add record count of sector
         record_count = sector_stats.pop('record_count')
         for column, column_stats in sector_stats.items():
             row = {
@@ -122,7 +120,7 @@ def analysis_dataset(data_path):
     
     results_df = pd.DataFrame(results)
     
-    # 保存分析结果
+    # save analysis results
     output_path = os.path.join(os.path.dirname(data_path), 'text_analysis_results.xlsx')
     results_df.to_excel(output_path, index=False)
     
@@ -141,27 +139,27 @@ def impact_analysis(folder_path):
         try:
             data = pd.read_csv(file_path)
             
-            # 数据预处理：移除空值和0值
+            # Data preprocessing: remove null values and zeros
             train_data_clean = train_data.dropna(subset=[impact, 'sector'])
             train_data_clean = train_data_clean[train_data_clean[impact] != 0]
             
             data_clean = data.dropna(subset=['true_value'])
             data_clean = data_clean[data_clean['true_value'] != 0]
             
-            # 转换为 float64 以获得更高精度
+            # Convert to float64 for higher precision
             train_values = train_data_clean[impact].astype(np.float64)
             true_values = data_clean['true_value'].astype(np.float64)
             
             def find_best_match(value):
-                # 计算相对误差: |a-b|/|b|
+                # calculate relative error: |a-b|/|b|
                 relative_errors = np.abs(train_values - value) / np.abs(value)
                 min_error_idx = np.argmin(relative_errors)
                 min_error = relative_errors[min_error_idx]
                 
-                # 获取最小误差对应的sector
+                # get sector with minimum error
                 best_match_sector = train_data_clean['sector'].iloc[min_error_idx]
                 
-                # 如果最小相对误差超过1%，返回None
+                # if minimum relative error exceeds 1%, return None
                 if min_error > 0.01:
                     print(f"Warning: Best match for value {value} has relative error {min_error*100:.4f}%")
                     return None
@@ -172,7 +170,7 @@ def impact_analysis(folder_path):
                     'matched_value': train_values[min_error_idx]
                 }
             
-            # 应用匹配函数并收集详细信息
+            # apply matching function and collect detailed information
             matches = []
             for idx, value in true_values.items():
                 match_result = find_best_match(value)
@@ -183,20 +181,20 @@ def impact_analysis(folder_path):
                         **match_result
                     })
             
-            # 转换匹配结果为DataFrame以便分析
+            # convert matching results to DataFrame for analysis
             match_df = pd.DataFrame(matches)
             
-            # 初始化sector列
+            # initialize sector column
             data['sector'] = None
             data['relative_error'] = None
             
-            # 填充匹配结果
+            # fill matching results
             if not match_df.empty:
                 for _, row in match_df.iterrows():
                     data.loc[row['index'], 'sector'] = row['sector']
                     data.loc[row['index'], 'relative_error'] = row['relative_error']
             
-            # 打印匹配统计
+            # print matching statistics
             total_rows = len(data)
             matched_rows = data['sector'].notna().sum()
             
@@ -206,7 +204,7 @@ def impact_analysis(folder_path):
             print(f"Match rate: {(matched_rows/total_rows)*100:.2f}%")
             
             if matched_rows > 0:
-                # 打印相对误差分布
+                # print relative error distribution
                 errors = data['relative_error'].dropna()
                 print("\nRelative error distribution:")
                 print(f"Min error: {errors.min()*100:.4f}%")
@@ -214,7 +212,7 @@ def impact_analysis(folder_path):
                 print(f"Mean error: {errors.mean()*100:.4f}%")
                 print(f"Median error: {errors.median()*100:.4f}%")
                 
-                # 打印各误差范围的匹配数量
+                # print matching count by error range
                 error_ranges = [0.0001, 0.0005, 0.001, 0.005, 0.01]
                 print("\nMatches by error range:")
                 prev_threshold = 0
@@ -223,13 +221,13 @@ def impact_analysis(folder_path):
                     print(f"{prev_threshold*100:.3f}% - {threshold*100:.3f}%: {count} matches")
                     prev_threshold = threshold
             
-            # 显示匹配的值
+            # display matched values
             unmatched = data[data['sector'].isna()]
             if len(unmatched) > 0:
                 print(f"\nSample of unmatched values:")
                 print(unmatched['true_value'].head())
             
-            # 保存结果
+            # save results
             data.to_csv(file_path, index=False)
             print(f"Results saved to {file_path}")
             
@@ -311,6 +309,7 @@ def read_vectors():
         vectors = joblib.load(os.path.join(MODEL_ROOT_PATH, f"{text_column}_embedding.joblib"))
         print(f"{text_column}: {len(vectors)}")
 
+
 def analysis_vector_by_sector():
     from configs.model_config import MODEL_ROOT_PATH, DATA_PATH
     import joblib
@@ -323,6 +322,8 @@ def analysis_vector_by_sector():
     image_output_path = os.path.join(DATA_PATH,'image')
     
     def get_color_list(n):
+        # Generate color list for visualization
+        # Returns base colors if n is small enough, otherwise generates a color gradient
         base_colors = [
             '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
             '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
@@ -336,7 +337,19 @@ def analysis_vector_by_sector():
         return [mcolors.rgb2hex(cmap(i)) for i in np.linspace(0, 1, n)]
 
     def calculate_metrics(vectors, sector_index_dict, sector_list):
-        """Calculate all metrics for given vectors"""
+        """
+        Calculate all metrics for given vectors
+        
+        Parameters:
+        - vectors: embedding vectors
+        - sector_index_dict: dictionary mapping sectors to their indices
+        - sector_list: list of all sectors
+        
+        Returns:
+        - Dictionary containing intra-sector similarity, inter-sector distances,
+          and clustering metrics
+        - Labels array for visualization
+        """
         results = {
             'intra_sector_similarity': {},
             'inter_sector_distances': [],
@@ -388,7 +401,16 @@ def analysis_vector_by_sector():
         return results, labels
 
     def create_visualizations(vectors, labels, sector_list, title_prefix, output_path):
-        """Create all visualizations for given vectors"""
+        """
+        Create visualizations for vector analysis
+        
+        Parameters:
+        - vectors: embedding vectors to visualize
+        - labels: sector labels for each vector
+        - sector_list: list of all sectors
+        - title_prefix: prefix for plot titles
+        - output_path: path to save visualization files
+        """
         # t-SNE visualization
         plt.figure(figsize=(12, 8))
         tsne = TSNE(n_components=2, random_state=42)
@@ -463,7 +485,14 @@ def analysis_vector_by_sector():
     return results
 
 def save_results_to_excel(results, text_columns, output_path):
-    """Save analysis results to Excel file"""
+    """
+    Save analysis results to Excel file
+    
+    Parameters:
+    - results: dictionary containing analysis results
+    - text_columns: list of text columns analyzed
+    - output_path: path to save the Excel file
+    """
     with pd.ExcelWriter(os.path.join(output_path, 'sector_embedding_analysis.xlsx')) as writer:
         # Summary sheet
         summary_data = []

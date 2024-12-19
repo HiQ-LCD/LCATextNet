@@ -4,21 +4,20 @@
 # @File    : dataset.py
 
 """
-使用Ecoinvent 3.10 进行训练，包括以下数据预处理：
-1. 单位过滤仅保留kg/kWh/MJ，数据23523->18148个
+Training with Ecoinvent 3.10 Database, with the following data preprocessing:
+1. Unit filtering to retain only kg/kWh/MJ measurements, reducing dataset from 23,523 to 18,148 samples
 
-输入特征：
-1. Activity Name: 768维文本向量
-2. Reference Product Name: 768维文本向量
-3. CPC Classification: 768维文本向量
-4. Product Information: 768维文本向量
-5. SystemBoundary: 768维文本向量 由includedActivitiesStart+includedActivitiesEnd拼接而成, 经过一个分类器
-6. generalComment: 768维文本向量
-7. technologyComment: 768维文本向量
+Input Features:
+1. Activity Name: 768-dimensional text embedding vector
+2. Reference Product Name: 768-dimensional text embedding vector  
+3. CPC Classification: 768-dimensional text embedding vector
+4. Product Information: 768-dimensional text embedding vector
+5. SystemBoundary: 768-dimensional text embedding vector derived from concatenation of includedActivitiesStart and includedActivitiesEnd, processed through a classifier
+6. generalComment: 768-dimensional text embedding vector
+7. technologyComment: 768-dimensional text embedding vector
 
-
-输出特征：
-EF v3.1方法下的25类环境影响值
+Output Features:
+25 environmental impact categories under EF v3.1 methodology
 """
 import os
 import sys

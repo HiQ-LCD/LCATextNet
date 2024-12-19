@@ -18,7 +18,7 @@ import pandas as pd
 
 
 class ComplexRegressionErrorAnalyzer:
-    """复杂回归模型错误分析器"""
+    """Complex regression model error analyzer"""
 
     def __init__(self, model: nn.Module):
         self.model = model
@@ -26,7 +26,7 @@ class ComplexRegressionErrorAnalyzer:
     def analyze_errors(self,
                        inputs: Tuple[torch.Tensor, ...],
                        true_values: torch.Tensor) -> Dict:
-        """分析预测错误"""
+        """Analyze prediction errors"""
 
         self.model.eval()
         with torch.no_grad():
@@ -49,7 +49,7 @@ class ComplexRegressionErrorAnalyzer:
 
     def export_prediction_results(self, inputs: Tuple[torch.Tensor, ...], true_values: torch.Tensor,
                                   output_path):
-        """导出预测结果"""
+        """Export prediction results"""
         self.model.eval()
         with torch.no_grad():
             # Print data type and device for each input tensor
@@ -93,13 +93,13 @@ def evaluate_model(model_name, train_date, model_version,result_path,impact_name
     (
         text_inputs_embeddings, system_boundary_embeddings, true_values) = trainer.load_data(impact_name)
 
-    # 初始化模型和解释器
+    # initialize model and explainer
     explainer = ComplexRegressionErrorAnalyzer(model)
 
-    # 准备输入数据
+    # prepare input data
     inputs = (text_inputs_embeddings, system_boundary_embeddings)
 
-    # 进行分析
+    # perform analysis
     results = explainer.export_prediction_results(inputs, true_values, result_path)
     print(results)
     return

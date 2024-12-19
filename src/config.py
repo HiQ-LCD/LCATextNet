@@ -1,7 +1,7 @@
 import os
 from loguru import logger
 
-# 日志存储路径
+# log storage path
 LOG_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "logs")
 if not os.path.exists(LOG_PATH):
     os.mkdir(LOG_PATH)
@@ -19,7 +19,7 @@ logger.info(f"数据目录：{DATA_PATH}")
 MODEL_ROOT_PATH = os.path.join(DATA_PATH, "model")
 logger.info(f"模型目录：{MODEL_ROOT_PATH}")
 
-# 从.env文件中读取环境变量
+# read environment variables from .env file
 from dotenv import load_dotenv
 
 env_file = os.path.join(WORK_DIR, '.env')

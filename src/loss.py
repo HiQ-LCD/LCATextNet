@@ -33,7 +33,7 @@ variances = [4.31894849e+04, 6.14759054e+06, 1.30248315e+02, 6.11561697e+06,
 
 class MultiTaskLossWrapper(nn.Module):
     """
-    多任务损失函数包装器, 对每个任务的预测值和真实值进行对数变换后计算MSE损失(logMSE)
+    Multi-task loss function wrapper, calculates MSE loss (logMSE) after log transformation of each task's prediction and true values
     """
     def __init__(self, model, num_tasks, epsilon=1,task_variances=variances):
         super(MultiTaskLossWrapper, self).__init__()
@@ -41,13 +41,13 @@ class MultiTaskLossWrapper(nn.Module):
         # self.log_vars = nn.Parameter(torch.zeros(num_tasks))
         self.epsilon = epsilon
         if task_variances is not None:
-            # 将方差转换到对数空间
+            # convert variances to logarithmic space
             variances = torch.tensor(task_variances)
-            # 对方差取对数，并进行归一化
+            # take logarithm of variances and normalize
             log_vars = torch.log(variances + self.epsilon)
-            # 归一化到合理范围，例如[-1, 1]
+            # normalize to a reasonable range, e.g. [-1, 1]
             log_vars_normalized = 2 * (log_vars - log_vars.min()) / (log_vars.max() - log_vars.min()) - 1
-            # 可以根据需要调整缩放因子
+            # scale factor can be adjusted as needed
             scaling_factor = 0.5
             initial_log_vars = scaling_factor * log_vars_normalized
             self.log_vars = nn.Parameter(initial_log_vars)
